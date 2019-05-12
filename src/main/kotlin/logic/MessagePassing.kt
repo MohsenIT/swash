@@ -151,6 +151,7 @@ class MessagePassing(val g: G) {
         }
         fnWriter.close()
         fpWriter.close()
+        g.updateAncestorClusterCnt()
     }
     //endregion
 

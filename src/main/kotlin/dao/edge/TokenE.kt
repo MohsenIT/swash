@@ -35,10 +35,10 @@ class TokenE(inV: RefV, outV: ElementV, type: String, weight: String) : E(inV, o
 
     override fun toString(): String = "E[${super.type}] ${super.inV.value} -$pon-> ${super.outV.value}"
 
-    override fun equals(obj: Any?): Boolean {
-        if (obj === this) return true
-        if (obj !is TokenE) return false
-        val e = obj as TokenE?
+    override fun equals(other: Any?): Boolean {
+        if (other === this) return true
+        if (other !is TokenE) return false
+        val e = other as TokenE?
         return super.inV == e!!.inV && super.outV == e.outV && this.order == e.order
     }
 

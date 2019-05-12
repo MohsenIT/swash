@@ -1,6 +1,7 @@
 package dao
 
 import com.koloboke.collect.map.hash.HashLongObjMaps
+import com.koloboke.collect.map.hash.HashObjObjMaps
 import com.koloboke.collect.set.hash.HashObjSets
 import dao.edge.E
 import dao.edge.TokenE
@@ -18,6 +19,8 @@ private val logger = mu.KotlinLogging.logger {}
 
 class G(expectedVertexCount: Int = 40000, expectedEdgesCount: Int = 80000) {
     private val vs: MutableMap<Long, V> = HashLongObjMaps.newMutableMap(expectedVertexCount)
+//    private val vs: MutableMap<V.Type, List<V>> = HashObjObjMaps.newMutableMap(expectedVertexCount)
+
     private val es: MutableSet<E> = HashObjSets.newMutableSet(expectedEdgesCount)
 
     //region Getters & Setters
@@ -46,6 +49,7 @@ class G(expectedVertexCount: Int = 40000, expectedEdgesCount: Int = 80000) {
 
         initPONs()
         initClusters()
+        updateAncestorClusterCnt(1)
     }
 
     private fun readEdgesFile(edgeCsvFilePath: String) {
