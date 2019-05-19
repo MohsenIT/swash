@@ -102,7 +102,7 @@ class ClusterProfile {
         // TODO: 27/08/2018 if isMatched on 2nd level?
     }
 
-    override fun toString() = "${entries.size} [entries=${entries.map { it.toString() }.joinToString() }]"
+    override fun toString() = "${entries.size} [entries=${entries.joinToString { it.toString() }}]"
     //endregion
 
 

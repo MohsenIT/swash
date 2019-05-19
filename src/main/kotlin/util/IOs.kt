@@ -26,7 +26,7 @@ object IOs {
     }
 
     @Throws(IOException::class)
-    fun writeSimilarityGraph(candidates: Map<RefV, List<MessagePassing.Candidate>>, outPath: String, hasAllVs: Boolean, g: G, delimiter: String = "\t") {
+    fun writeSimilarityGraph(g: G, hasAllVs: Boolean, outPath: String, candidates: Map<RefV, List<MessagePassing.Candidate>>, delimiter: String = "\t") {
         val candidateList = candidates.values.flatMap { it }
         val vertices: Set<V> = if(hasAllVs) g.getRefVs().toSet() else
             candidateList.flatMap { listOf(it.originRefV, it.destRefV) }.toSet()
@@ -50,10 +50,9 @@ object IOs {
     }
 
     @Throws(IOException::class)
-    fun writeVlists(candidates: Map<RefV, List<MessagePassing.Candidate>>, outPath: String, hasAllVs: Boolean, g: G, delimiter: String = "\t") {
-        val candidateList = candidates.values.flatten()
+    fun writeVsClustersToTsv(g: G, hasAllVs: Boolean, outPath: String, delimiter: String = "\t") {
         val vertices: Set<V> = if(hasAllVs) g.getRefVs().toSet() else
-            candidateList.flatMap { listOf(it.originRefV, it.destRefV) }.toSet()
+            g.getRefVs().filter { it.hasInOutE(E.Type.REF_REF) }.toSet()
 
         val vCsvRows = StringBuilder()
         vCsvRows.append(String.format("Id%1\$s Label%1\$s Weight%1\$s Res_Id%1\$s Cluster%1\$s Cluster_Size\r\n", delimiter))

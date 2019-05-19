@@ -1,8 +1,6 @@
 import com.xenomachina.argparser.ArgParser
 import com.xenomachina.argparser.mainBody
 import dao.G
-import dao.edge.E
-import dao.vertex.V
 import evaluation.AbstractFScore
 import evaluation.ClustersFScore
 import logic.MessagePassing
@@ -20,12 +18,12 @@ object Main {
         val eval: AbstractFScore = ClustersFScore(g)
         // eval.evaluate()
         val mp = MessagePassing(g)
-        val candidates = mp.V(V.Type.REFERENCE)
-                .out(E.Type.REF_TKN).`in`(E.Type.REF_TKN).aggRefVsTerminal(1, 0.5f)
-        //util.IOs.writeSimilarityGraph(candidates, "out/", true, g)
+        val candidates = mp.refVs().sendOuts().sendIns().aggMsgsToCandidates()
 
         mp.clusterCandidates(candidates)
-        util.IOs.writeVlists(candidates, "out/", true, g)
         eval.evaluate()
+
+        //util.IOs.writeSimilarityGraph(g, true, "out/", candidates)
+        //util.IOs.writeVsClustersToTsv(g, true, "out/")
     }
 }

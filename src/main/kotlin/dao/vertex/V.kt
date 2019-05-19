@@ -48,7 +48,7 @@ open class V(
         require(this.map { it.type.level }.distinct().count() == 1) {"All vertices should be in the same levels."}
         var level: Int = this.map { it.type.level }.firstOrNull() ?: Int.MAX_VALUE
         var vs: Set<V> = HashObjSets.newMutableSet(this)
-        while (level < destLevel) vs = vs.flatMap{ it.getOutV(E.Type.getTypeByLevels(level, ++level)!!)}.toSet()
+        while (level < destLevel) vs = vs.flatMap{ it.getOutV(E.Type.getTypeByLevels(level, ++level))}.toSet()
         return vs
     }
 
@@ -81,7 +81,7 @@ open class V(
         ABBREVIATED("ABR", 3);
 
         companion object {
-            val MAX_LEVEL = Arrays.stream(values()).mapToInt { b -> b.level }.max().orElse(3)
+            val MAX_LEVEL = values().map { it.level }.max() ?: 3
 
             fun toType(text: String): Type? = values().first { it.text.equals(text, ignoreCase = true)}
 

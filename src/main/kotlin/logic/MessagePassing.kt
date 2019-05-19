@@ -14,42 +14,46 @@ import java.io.UnsupportedEncodingException
 import java.util.*
 
 
-class MessagePassing(val g: G) {
+class MessagePassing(private val g: G) {
     private var currentPosition: MutableMap<Message, V> = emptyMap<Message, V>().toMutableMap()
-
+    private var currentLevel = 0
 
     //region Traversal & Message Passing Steps
-    fun V(sourceVs: Collection<V>): MessagePassing {
+    fun refVs(): MessagePassing {
+        val sourceVs = g.getRefVs()
         currentPosition = HashObjObjMaps.newMutableMap(sourceVs.size)
-        sourceVs.forEach { v -> currentPosition[Message(v as RefV, 1.0f)] = v }
+        sourceVs.forEach { currentPosition[Message(it)] = it }
+        currentLevel = 0
         return this
     }
 
-    fun V(type: V.Type): MessagePassing {
-        return this.V(g.getVs(type))
-    }
-
-    fun out(type: E.Type): MessagePassing {
+    fun sendOuts(): MessagePassing {
         val nextPosition: MutableMap<Message, V> = HashObjObjMaps.newMutableMap()
+        val types = E.Type.getTypesByLevels(currentLevel, currentLevel + 1)
         for ((key, value) in currentPosition) {
-            for (v in value.getOutV(type)) {
-                val elementV = v as ElementV
+            val outEs = types.map { value.getOutE(it) }.flatten()
+            for (e in outEs) {
+                val elementV = e.outV as ElementV
                 val m = key.clone()
                 m.incMaxLevel()
                 m.similarity = m.similarity / elementV.clusterCount
                 if (elementV.type === V.Type.TOKEN)
-                    m.firstToken = elementV
+                    m.tokenE = e as TokenE
                 nextPosition[m] = elementV
             }
         }
         currentPosition = nextPosition
+        currentLevel++
         return this
     }
 
-    fun `in`(type: E.Type): MessagePassing {
+    fun sendIns(): MessagePassing {
         val nextPosition: MutableMap<Message, V> = HashObjObjMaps.newMutableMap()
+        val types = E.Type.getTypesByLevels(currentLevel - 1, currentLevel)
+
         for ((key, value) in currentPosition) {
-            for (v in value.getInV(type)) {
+            val inVs = types.map { value.getInV(it) }.flatten()
+            for (v in inVs) {
                 val m = key.clone()
                 when {
                     v.type === V.Type.REFERENCE -> m.destRefV = v as RefV
@@ -59,10 +63,11 @@ class MessagePassing(val g: G) {
             }
         }
         currentPosition = nextPosition
+        currentLevel--
         return this
     }
 
-    fun aggRefVsTerminal(commonMsgTh: Int, relSimTh: Float): Map<RefV, List<Candidate>> {
+    fun aggMsgsToCandidates(commonMsgTh: Int = 1, relSimTh: Float = 0.5f): Map<RefV, List<Candidate>> {
         val result = currentPosition.keys
                 .groupBy { it.destRefV!! }.mapValues { it.value.groupBy(Message::originRefV) }
 
@@ -99,8 +104,7 @@ class MessagePassing(val g: G) {
      */
     @Throws(FileNotFoundException::class, UnsupportedEncodingException::class)
     fun clusterCandidates(candidates: Map<RefV, List<Candidate>>) {
-        // add similarity edges between tokens (REF_REF edges)
-        candidates.values.flatMap { it }.forEach { g.addE(it.destRefV, it.originRefV, E.Type.REF_REF, it.sumSimilarity) }
+        candidates.values.flatten().forEach { g.addE(it.destRefV, it.originRefV, E.Type.REF_REF, it.sumSimilarity) }
 
         // collect REFs and prioritize them
         val isVisited = g.getRefVs().filter { it.hasInOutE(E.Type.REF_REF) }
@@ -111,12 +115,6 @@ class MessagePassing(val g: G) {
 
 
         // BFS traversal on REF_REF edges
-        val fpWriter = PrintWriter("/home/ofogh/uni/PHDResearch/Dev/FP.tsv", "UTF-8")
-        val fnWriter = PrintWriter("/home/ofogh/uni/PHDResearch/Dev/FN.tsv", "UTF-8")
-        var all = 0
-        var notConsistentCount = 0
-        var inAndChange = 0
-        val inAndChangeAndTP = 0
         for (notVisitedRefV in isVisited.keys) {
             if (isVisited[notVisitedRefV]!!)
                 continue
@@ -129,40 +127,28 @@ class MessagePassing(val g: G) {
                 for (adj in adjacentList) {
                     val result = clusterProfile.align(adj)
                     var isConsistent = result.isConsistent
-                    all++
-                    if (!isConsistent) {
-                        isConsistent = result.canBecomeConsistent()
-                        notConsistentCount++
-                        if (isConsistent) inAndChange++
-                        //if(isConsistent && u.getRefResolvedId().equals(adj.getRefResolvedId()))inAndChangeAndTP++;
-                    }
+                    if (!isConsistent) isConsistent = result.canBecomeConsistent()
                     if (isConsistent) {
                         queue.add(adj)
                         isVisited[adj] = true
                         adj.replaceReferenceCluster(r, g)
                         clusterProfile.merge(result)
                     }
-                    if(isConsistent && r.refResolvedIdV != adj.refResolvedIdV)
-                        fpWriter.printf("%s\t%s\t%s%n", r.value, adj.value, clusterProfile)
-                    else if(!isConsistent && r.refResolvedIdV == adj.refResolvedIdV)
-                        fnWriter.printf("%s\t%s\t%s%n", r.value, adj.value, clusterProfile)
                 }
             }
         }
-        fnWriter.close()
-        fpWriter.close()
         g.updateAncestorClusterCnt()
     }
     //endregion
 
 
-    inner class Message(var originRefV: RefV, var similarity: Float, var maxLayer: Int = 0) : Cloneable {
+    class Message(var originRefV: RefV, var similarity: Float = 1F, var maxLayer: Int = 0) : Cloneable {
         var destRefV: RefV? = null
-        var firstToken: ElementV? = null
+        var tokenE: TokenE? = null
 
-        constructor(originRefV: RefV, similarity: Float, maxLayer: Int, destRefV: RefV?, firstToken: ElementV?) : this(originRefV, similarity, maxLayer) {
+        constructor(originRefV: RefV, similarity: Float, maxLayer: Int, destRefV: RefV?, firstToken: TokenE?) : this(originRefV, similarity, maxLayer) {
             this.destRefV = destRefV
-            this.firstToken = firstToken
+            this.tokenE = firstToken
         }
 
         fun incMaxLevel() {
@@ -170,13 +156,13 @@ class MessagePassing(val g: G) {
         }
 
         public override fun clone(): Message {
-            return Message(this.originRefV, this.similarity, this.maxLayer, this.destRefV, this.firstToken)
+            return Message(this.originRefV, this.similarity, this.maxLayer, this.destRefV, this.tokenE)
         }
 
-        override fun toString() = "MSG{origin=$originRefV, sim=$similarity, firstToken=$firstToken}"
+        override fun toString() = "MSG{origin=$originRefV, sim=$similarity, tokenE=$tokenE}"
     }
 
-    inner class Candidate(val destRefV: RefV, val originRefV: RefV, val messageList: List<Message>) {
+    class Candidate(val destRefV: RefV, val originRefV: RefV, val messageList: List<Message>) {
 
         /**
          * Gets sum of all messages similarity from the destination V.
@@ -194,6 +180,6 @@ class MessagePassing(val g: G) {
             get() = messageList.size
 
         override fun toString(): String = "CAN{origin=%s, cnt=%d, sim=%.3f, messages=%s}"
-                .format(originRefV, cntMessage, sumSimilarity, messageList.map { it.firstToken })
+                .format(originRefV, cntMessage, sumSimilarity, messageList.map { it.tokenE })
     }
 }

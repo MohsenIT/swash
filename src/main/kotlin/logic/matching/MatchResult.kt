@@ -50,7 +50,7 @@ class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<TokenE>) {
                 val pon: TokenE.PON = sortedTokenEs[i].pon
                 if (pon === MIDDLENAME && sortedTokenEs[i + 1].pon === LASTNAME)
                     isShiftStarted = true
-                pons[i] = if (isShiftStarted) pon.nextRankedNamePart() else pon
+                pons[i] = if (isShiftStarted) pon.nextRankedPON() else pon
                 i++
             }
             return if (isShiftStarted) pons else null
@@ -61,23 +61,23 @@ class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<TokenE>) {
      */
     val shiftedRightPONs: Array<TokenE.PON>?
         get() {
-            val nameParts = Array(sortedTokenEs.size) { UNKNOWN }
+            val pons = Array(sortedTokenEs.size) { UNKNOWN }
             var isShiftStarted = false
             for (i in sortedTokenEs.indices.reversed()) {
                 val part = sortedTokenEs[i].pon
                 if (part === MIDDLENAME && sortedTokenEs[i - 1].pon === FIRSTNAME)
                     isShiftStarted = true
-                nameParts[i] = if (isShiftStarted) part.previousRankedNamePart() else part
+                pons[i] = if (isShiftStarted) part.previousRankedPON() else part
             }
-            return if (isShiftStarted) nameParts else null
+            return if (isShiftStarted) pons else null
         }
 
     /**
      * @return an array of `PON`s from tokenEs that Shifted to Right.
      */
-    val reversedFirstnameAndLastname: Array<TokenE.PON>?
+    private val reversedFirstnameAndLastname: Array<TokenE.PON>?
         get() {
-            val nameParts = Array(sortedTokenEs.size) { UNKNOWN }
+            val pons = Array(sortedTokenEs.size) { UNKNOWN }
             var hasLastname = false
             var hasFirstname = false
             var i = 0
@@ -85,16 +85,16 @@ class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<TokenE>) {
             while (i < sortedTokenEsSize) {
                 val part = sortedTokenEs[i].pon
                 if (part === LASTNAME) {
-                    nameParts[i] = FIRSTNAME
+                    pons[i] = FIRSTNAME
                     hasLastname = true
                 }
                 if (part === FIRSTNAME) {
-                    nameParts[i] = LASTNAME
+                    pons[i] = LASTNAME
                     hasFirstname = true
                 }
                 i++
             }
-            return if (hasLastname && hasFirstname) nameParts else null
+            return if (hasLastname && hasFirstname) pons else null
         }
 
     //region Methods
@@ -112,22 +112,22 @@ class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<TokenE>) {
      *
      * @return a boolean that is false if not consistent and true otherwise.
      */
-    private fun isConsistent(parts: Array<TokenE.PON>): Boolean {
+    private fun isConsistent(pons: Array<TokenE.PON>): Boolean {
         for (profileEntry in clusterProfile.entries) {
             val matched = matchedEntries.filter { it.profileEntry === profileEntry }.sortedWith(
                     compareBy<Matched> { it.matchedV.type.level } // 1) isMatched in lower level has more priority
-                            .thenBy { it.profileEntry.pon !== parts[it.refTokenE.order] } // 2) if a pon matches with multiple tokens, it consider the one that has the same pon
+                            .thenBy { it.profileEntry.pon !== pons[it.refTokenE.order] } // 2) if a pon matches with multiple tokens, it consider the one that has the same pon
             ).firstOrNull()
 
             if (matched == null) {
                 if (profileEntry.pon === LASTNAME || profileEntry.pon === FIRSTNAME)
                     return false
-                if (notMatchedTokenEs.filter { parts[it.order] === profileEntry.pon }.count() > 0)
+                if (notMatchedTokenEs.filter { pons[it.order] === profileEntry.pon }.count() > 0)
                     return false // if refV has any token with the same PON, it must be isMatched.
-            } else if (matched.hasEqualNamePart(parts)) {
+            } else if (matched.hasEqualPON(pons)) {
                 if (profileEntry.pon === LASTNAME) {
                     if (matched.matchedV.type.level > 2) return false
-                } else { // TODO: 26/08/2018 it is possible that two middle name is isMatched that one is abbr and other not
+                } else { // TODO: 26/08/2018 it is possible that two middle names are matched that one is abbr and other not
                     if (matched.isNonAbbrsMatchedInAbbrLevel)
                         return false
                 }
@@ -141,10 +141,10 @@ class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<TokenE>) {
     }
 
     fun canBecomeConsistent(): Boolean {
-        val shiftedLeftNameParts = this.shiftedLeftPONs
-        var isConsistent = shiftedLeftNameParts != null && this.isConsistent(shiftedLeftNameParts)
+        val shiftedLeftPONs = this.shiftedLeftPONs
+        var isConsistent = shiftedLeftPONs != null && this.isConsistent(shiftedLeftPONs)
         if (isConsistent) {
-            this.setTokenEsNamesPart(shiftedLeftNameParts!!)
+            this.setTokenEsNamesPart(shiftedLeftPONs!!)
             return true
         }
         //        TokenE.PON[] shiftedRightPONs = this.getShiftedRightPONs();
@@ -170,7 +170,7 @@ class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<TokenE>) {
          * @param parts array of PON that should be used as PON of `refTokenE`
          * @return true if `profileEntry` and `refTokenE` has equal name parts.
          */
-        fun hasEqualNamePart(parts: Array<TokenE.PON>): Boolean {
+        fun hasEqualPON(parts: Array<TokenE.PON>): Boolean {
             return  parts.size > refTokenE.order && profileEntry.pon === parts[refTokenE.order]
         }
 

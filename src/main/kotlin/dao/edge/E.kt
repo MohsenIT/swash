@@ -30,11 +30,13 @@ open class E(open val inV: V, open val outV: V, val type: Type, var weight: Floa
         fun isInterLevel()= inLevel != outLevel
 
         companion object {
-            fun getTypeByLevels(inLevel: Int, outLevel: Int): Type? {
+            fun getTypesByLevels(inLevel: Int, outLevel: Int): List<Type> {
                 checkArgument(inLevel in 0..2, "InLevel argument was %s but expected in range [0, 2].", inLevel)
                 checkArgument(inLevel + 1 == outLevel, "OutLevel should be InLevel + 1.")
-                return Arrays.stream(Type.values()).filter { t -> t.inLevel == inLevel && t.outLevel == outLevel }.findAny().orElse(null)
+                return values().filter { it.inLevel == inLevel && it.outLevel == outLevel }
             }
+
+            fun getTypeByLevels(inLevel: Int, outLevel: Int) = getTypesByLevels(inLevel, outLevel)[0]
         }
     }
     //endregion

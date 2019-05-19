@@ -20,17 +20,17 @@ class TokenE(inV: RefV, outV: ElementV, type: String, weight: String) : E(inV, o
 
     //region methods
     /**
-     * Increase the rank of pon, for example if namepart is LASTNAME change it to SUFFIX
+     * Increase the rank of pon, for example if pon is LASTNAME change it to SUFFIX
      */
     fun incPONRank() {
-        pon = pon.nextRankedNamePart()
+        pon = pon.nextRankedPON()
     }
 
     /**
-     * Decrease the rank of pon, for example if namepart is FIRSTNAME change it to PREFIX
+     * Decrease the rank of pon, for example if PON is FIRSTNAME change it to PREFIX
      */
     fun decPONRank() {
-        pon = pon.previousRankedNamePart()
+        pon = pon.previousRankedPON()
     }
 
     override fun toString(): String = "E[${super.type}] ${super.inV.value} -$pon-> ${super.outV.value}"
@@ -54,8 +54,8 @@ class TokenE(inV: RefV, outV: ElementV, type: String, weight: String) : E(inV, o
     enum class PON (var rank: Int) {
         UNKNOWN(-10), PREFIX(1), FIRSTNAME(2), MIDDLENAME(3), LASTNAME(4), SUFFIX(5);
 
-        fun nextRankedNamePart(): PON = if (this.rank == 5) SUFFIX else values()[this.rank + 1]
+        fun nextRankedPON(): PON = if (this.rank == 5) SUFFIX else values()[this.rank + 1]
 
-        fun previousRankedNamePart(): PON = if (this.rank == 1) PREFIX else values()[this.rank - 1]
+        fun previousRankedPON(): PON = if (this.rank == 1) PREFIX else values()[this.rank - 1]
     }
 }
