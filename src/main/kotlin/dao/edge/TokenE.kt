@@ -1,10 +1,11 @@
 package dao.edge
 
 import dao.vertex.ElementV
+import dao.vertex.NameV
 import dao.vertex.RefV
 import util.Strings
 
-class TokenE(inV: RefV, outV: ElementV, type: String, weight: String) : E(inV, outV, type, weight), Cloneable {
+class TokenE(inV: NameV, outV: ElementV, type: String, weight: String) : E(inV, outV, type, weight), Cloneable {
     //region fields
     val order: Int = weight.toInt() - 1
     val isAbbr: Boolean = Strings.isAbbreviated(outV.value.length)
@@ -14,8 +15,8 @@ class TokenE(inV: RefV, outV: ElementV, type: String, weight: String) : E(inV, o
     override val outV: ElementV
         get() = super.outV as ElementV
 
-    override val inV: RefV
-        get() = super.inV as RefV
+    override val inV: NameV
+        get() = super.inV as NameV
     //endregion
 
     //region methods

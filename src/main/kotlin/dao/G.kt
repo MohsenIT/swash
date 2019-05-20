@@ -19,8 +19,6 @@ private val logger = mu.KotlinLogging.logger {}
 
 class G(expectedVertexCount: Int = 40000, expectedEdgesCount: Int = 80000) {
     private val vs: MutableMap<Long, V> = HashLongObjMaps.newMutableMap(expectedVertexCount)
-//    private val vs: MutableMap<V.Type, List<V>> = HashObjObjMaps.newMutableMap(expectedVertexCount)
-
     private val es: MutableSet<E> = HashObjSets.newMutableSet(expectedEdgesCount)
 
     //region Getters & Setters

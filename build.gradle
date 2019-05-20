@@ -26,7 +26,6 @@ dependencies {
     compile "com.koloboke:koloboke-impl-jdk8:1.0.0"
     compile "info.debatty:java-string-similarity:1.1.0"
     compile "de.zedlitz:phonet4java:1.1"
-    compile "com.google.guava:guava:25.1-jre"
     compile 'io.github.microutils:kotlin-logging:1.6.25'
     compile 'org.slf4j:slf4j-simple:1.7.26'
     compile 'com.xenomachina:kotlin-argparser:2.0.7'

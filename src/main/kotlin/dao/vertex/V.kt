@@ -6,12 +6,7 @@ import dao.edge.E
 import util.putOrAddListValue
 import java.util.*
 
-open class V(
-        val id: Long,
-        val value: String,
-        val type: Type,
-        var weight: Long
-) {
+open class V(val id: Long, val value: String, val type: Type, var weight: Long) {
 
     val inE: MutableMap<E.Type, MutableList<E>> = HashObjObjMaps.newMutableMap()
     val outE: MutableMap<E.Type, MutableList<E>> = HashObjObjMaps.newMutableMap()
@@ -75,6 +70,7 @@ open class V(
         RESOLVED_ID("RID", -1),
         CLUSTER("CLS", -1),
         REFERENCE("REF", 0),
+        HIERARCHY("HRC", 0),
         TOKEN("TKN", 1),
         SIMILAR("SIM", 2),
         NICKNAME("NCK", 2),
@@ -91,5 +87,3 @@ open class V(
         }
     }
 }
-
-

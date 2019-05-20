@@ -7,17 +7,16 @@ import logic.matching.ClusterProfile
 
 import dao.vertex.V.Type.REFERENCE
 
-class RefV(id: String, value: String, weight: String) : V(id.toLong(), value, REFERENCE, weight.toLong()) {
+class RefV(id: String, value: String, weight: String) : NameV(id.toLong(), value, REFERENCE, weight.toLong()) {
+
+    override val tokenEs: List<TokenE>
+        get() = getOutE(E.Type.REF_TKN).map { it as TokenE }.sortedBy { it.order }
 
     val refResolvedIdV: V?
         get() = getInV(E.Type.RID_REF).firstOrNull()
 
     val refClusterV: ClusterV?
         get() = getInV(E.Type.CLS_REF).firstOrNull() as ClusterV
-
-    val tokenEs: List<TokenE>
-        get() = getOutE(E.Type.REF_TKN).map { it as TokenE }
-
 
     //region methods
 
