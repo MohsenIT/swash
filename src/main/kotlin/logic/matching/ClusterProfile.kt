@@ -1,8 +1,8 @@
 package logic.matching
 
 import com.koloboke.collect.map.hash.HashObjObjMaps
-import dao.edge.TokenE
-import dao.edge.TokenE.PON
+import dao.edge.ElementE
+import dao.edge.ElementE.PON
 import dao.vertex.ElementV
 import dao.vertex.RefV
 import dao.vertex.V
@@ -23,10 +23,10 @@ class ClusterProfile {
 
     //region Methods
     fun align(refV: RefV): MatchResult {
-        var refMap = refV.tokenEs.groupBy { it.outV }.mapValues { it.value.toMutableSet() }.toMutableMap()
+        var refMap = refV.elementEs.groupBy { it.outV }.mapValues { it.value.toMutableSet() }.toMutableMap()
         var profileMap = entries.groupBy { it.elementV }.mapValues { it.value.toMutableSet() }.toMutableMap()
 
-        val result = MatchResult(this, refV.tokenEs)
+        val result = MatchResult(this, refV.elementEs)
         for (i in 1..V.Type.MAX_LEVEL) {
             refMap = refMap.outElementVsAtLeast(i)
             profileMap = profileMap.outElementVsAtLeast(i)
@@ -49,7 +49,7 @@ class ClusterProfile {
             // elementVs is removed out of above loops to does not change Maps during iteration
             // if an entry contains more than 1 element on its set, remove only the same element (not whole entry)
             for (me in matchedEntriesToRemove) {
-                val tokenEs: MutableSet<TokenE>? = refMap[me.matchedV]
+                val tokenEs: MutableSet<ElementE>? = refMap[me.matchedV]
                 if (tokenEs != null && tokenEs.size > 1) tokenEs.remove(me.refTokenE) else refMap.remove(me.matchedV)
                 val profEs = profileMap[me.matchedV]
                 if (profEs != null && profEs.size > 1) profEs.remove(me.profileEntry) else profileMap.remove(me.matchedV)
@@ -66,7 +66,7 @@ class ClusterProfile {
      * @param <T> A generic type of my parameter
      * @return set of vertices in the minLevel
     </T> */
-    private fun <T> MutableMap<ElementV, MutableSet<T>>.outElementVsAtLeast(minLevel: Int): MutableMap<ElementV, MutableSet<T>> {
+    fun <T> MutableMap<ElementV, MutableSet<T>>.outElementVsAtLeast(minLevel: Int): MutableMap<ElementV, MutableSet<T>> {
         val resultMap: MutableMap<ElementV, MutableSet<T>> = HashObjObjMaps.newMutableMap(this.size)
         for ((key, value) in this) {
             var currentLevel = key.type.level
@@ -106,7 +106,7 @@ class ClusterProfile {
     //endregion
 
 
-    class Entry (tokenE: TokenE) {
+    class Entry (tokenE: ElementE) {
         val elementV: ElementV = tokenE.outV
         val isAbbr: Boolean = tokenE.isAbbr
         val isBeforeDot: Boolean = tokenE.isBeforeDot

@@ -1,11 +1,10 @@
 package dao
 
 import com.koloboke.collect.map.hash.HashLongObjMaps
-import com.koloboke.collect.map.hash.HashObjObjMaps
 import com.koloboke.collect.set.hash.HashObjSets
 import dao.edge.E
-import dao.edge.TokenE
-import dao.edge.TokenE.PON
+import dao.edge.ElementE
+import dao.edge.ElementE.PON
 import dao.vertex.ClusterV
 import dao.vertex.ElementV
 import dao.vertex.RefV
@@ -57,7 +56,7 @@ class G(expectedVertexCount: Int = 40000, expectedEdgesCount: Int = 80000) {
             val inV = vs[l[0].toLong()]!!
             val outV = vs[l[1].toLong()]!!
             val e = if (l[4] == "REF_TKN")
-                TokenE(inV as RefV, outV as ElementV, l[4], l[5])
+                ElementE(inV as RefV, outV as ElementV, l[4], l[5])
             else
                 E(inV, outV, l[4], l[5])
             es.add(e)
@@ -100,11 +99,11 @@ class G(expectedVertexCount: Int = 40000, expectedEdgesCount: Int = 80000) {
      */
     private fun initPONs() {
         for (refV in getRefVs()) {
-            val tokenEs= refV.tokenEs.sortedWith(compareBy<TokenE> { it.isAbbr }.thenByDescending { it.order }).toMutableList()
-            val lname: TokenE = tokenEs[0]
+            val tokenEs= refV.elementEs.sortedWith(compareBy<ElementE> { it.isAbbr }.thenByDescending { it.order }).toMutableList()
+            val lname: ElementE = tokenEs[0]
             lname.pon = PON.LASTNAME
             tokenEs.remove(lname)
-            val fname: TokenE? = tokenEs.sortedBy { it.order }.firstOrNull()
+            val fname: ElementE? = tokenEs.sortedBy { it.order }.firstOrNull()
             if (fname != null) {
                 fname.pon = PON.FIRSTNAME
                 tokenEs.remove(fname)

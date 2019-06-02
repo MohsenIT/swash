@@ -1,15 +1,15 @@
 package logic.matching
 
-import dao.edge.TokenE
+import dao.edge.ElementE
 import dao.vertex.ElementV
 
 import java.util.ArrayList
 
-import dao.edge.TokenE.PON.*
+import dao.edge.ElementE.PON.*
 
-class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<TokenE>) {
+class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<ElementE>) {
 
-    val sortedTokenEs: List<TokenE> = tokenEs.sortedBy { it.order }
+    val sortedTokenEs: List<ElementE> = tokenEs.sortedBy { it.order }
     var matchedEntries: MutableList<Matched> = ArrayList(3)
 
     fun addMatchedEntries(matched: Matched) {
@@ -29,10 +29,10 @@ class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<TokenE>) {
      *
      * @return List of TokenEs that does not isMatched with profile entries.
      */
-    val notMatchedTokenEs: List<TokenE>
+    val notMatchedTokenEs: List<ElementE>
         get() = sortedTokenEs.filter { e -> matchedEntries.none { m -> m.refTokenE == e } }
 
-    fun setTokenEsNamesPart(pons: Array<TokenE.PON>) {
+    fun setTokenEsNamesPart(pons: Array<ElementE.PON>) {
         var i = 0
         while (i < sortedTokenEs.size) sortedTokenEs[i].pon = pons[i++]
     }
@@ -40,14 +40,14 @@ class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<TokenE>) {
     /**
      * @return an array of `PON`s from tokenEs that Shifted to Left.
      */
-    private val shiftedLeftPONs: Array<TokenE.PON>?
+    private val shiftedLeftPONs: Array<ElementE.PON>?
         get() {
             val sortedTokenEsSize = sortedTokenEs.size
             val pons = Array(sortedTokenEsSize) { UNKNOWN }
             var isShiftStarted = false
             var i = 0
             while (i < sortedTokenEsSize) {
-                val pon: TokenE.PON = sortedTokenEs[i].pon
+                val pon: ElementE.PON = sortedTokenEs[i].pon
                 if (pon === MIDDLENAME && sortedTokenEs[i + 1].pon === LASTNAME)
                     isShiftStarted = true
                 pons[i] = if (isShiftStarted) pon.nextRankedPON() else pon
@@ -59,7 +59,7 @@ class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<TokenE>) {
     /**
      * @return an array of `PON`s from tokenEs that Shifted to Right.
      */
-    val shiftedRightPONs: Array<TokenE.PON>?
+    val shiftedRightPONs: Array<ElementE.PON>?
         get() {
             val pons = Array(sortedTokenEs.size) { UNKNOWN }
             var isShiftStarted = false
@@ -75,7 +75,7 @@ class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<TokenE>) {
     /**
      * @return an array of `PON`s from tokenEs that Shifted to Right.
      */
-    private val reversedFirstnameAndLastname: Array<TokenE.PON>?
+    private val reversedFirstnameAndLastname: Array<ElementE.PON>?
         get() {
             val pons = Array(sortedTokenEs.size) { UNKNOWN }
             var hasLastname = false
@@ -112,7 +112,7 @@ class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<TokenE>) {
      *
      * @return a boolean that is false if not consistent and true otherwise.
      */
-    private fun isConsistent(pons: Array<TokenE.PON>): Boolean {
+    private fun isConsistent(pons: Array<ElementE.PON>): Boolean {
         for (profileEntry in clusterProfile.entries) {
             val matched = matchedEntries.filter { it.profileEntry === profileEntry }.sortedWith(
                     compareBy<Matched> { it.matchedV.type.level } // 1) isMatched in lower level has more priority
@@ -164,13 +164,13 @@ class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<TokenE>) {
 
     //endregion
 
-    class Matched(var profileEntry: ClusterProfile.Entry, var refTokenE: TokenE, var matchedV: ElementV) : Cloneable {
+    class Matched(var profileEntry: ClusterProfile.Entry, var refTokenE: ElementE, var matchedV: ElementV) : Cloneable {
 
         /**
          * @param parts array of PON that should be used as PON of `refTokenE`
          * @return true if `profileEntry` and `refTokenE` has equal name parts.
          */
-        fun hasEqualPON(parts: Array<TokenE.PON>): Boolean {
+        fun hasEqualPON(parts: Array<ElementE.PON>): Boolean {
             return  parts.size > refTokenE.order && profileEntry.pon === parts[refTokenE.order]
         }
 

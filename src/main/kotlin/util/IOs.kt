@@ -27,7 +27,7 @@ object IOs {
 
     @Throws(IOException::class)
     fun writeSimilarityGraph(g: G, hasAllVs: Boolean, outPath: String, candidates: Map<RefV, List<MessagePassing.Candidate>>, delimiter: String = "\t") {
-        val candidateList = candidates.values.flatMap { it }
+        val candidateList = candidates.values.flatten()
         val vertices: Set<V> = if(hasAllVs) g.getRefVs().toSet() else
             candidateList.flatMap { listOf(it.originRefV, it.destRefV) }.toSet()
 

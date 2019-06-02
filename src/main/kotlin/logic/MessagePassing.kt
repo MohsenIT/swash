@@ -3,13 +3,12 @@ package logic
 import com.koloboke.collect.map.hash.HashObjObjMaps
 import dao.G
 import dao.edge.E
-import dao.edge.TokenE
+import dao.edge.ElementE
 import dao.vertex.ElementV
 import dao.vertex.RefV
 import dao.vertex.V
 
 import java.io.FileNotFoundException
-import java.io.PrintWriter
 import java.io.UnsupportedEncodingException
 import java.util.*
 
@@ -29,7 +28,7 @@ class MessagePassing(private val g: G) {
 
     fun sendOuts(): MessagePassing {
         val nextPosition: MutableMap<Message, V> = HashObjObjMaps.newMutableMap()
-        val types = E.Type.getTypesByLevels(currentLevel, currentLevel + 1)
+        val types = E.Type.getNextLevelTypes(currentLevel)
         for ((key, value) in currentPosition) {
             val outEs = types.map { value.getOutE(it) }.flatten()
             for (e in outEs) {
@@ -38,7 +37,7 @@ class MessagePassing(private val g: G) {
                 m.incMaxLevel()
                 m.similarity = m.similarity / elementV.clusterCount
                 if (elementV.type === V.Type.TOKEN)
-                    m.tokenE = e as TokenE
+                    m.tokenE = e as ElementE
                 nextPosition[m] = elementV
             }
         }
@@ -49,7 +48,7 @@ class MessagePassing(private val g: G) {
 
     fun sendIns(): MessagePassing {
         val nextPosition: MutableMap<Message, V> = HashObjObjMaps.newMutableMap()
-        val types = E.Type.getTypesByLevels(currentLevel - 1, currentLevel)
+        val types = E.Type.getNextLevelTypes(currentLevel - 1)
 
         for ((key, value) in currentPosition) {
             val inVs = types.map { value.getInV(it) }.flatten()
@@ -109,7 +108,7 @@ class MessagePassing(private val g: G) {
         // collect REFs and prioritize them
         val isVisited = g.getRefVs().filter { it.hasInOutE(E.Type.REF_REF) }
                 .sortedWith(compareBy<RefV> { it.getOutE(E.Type.REF_TKN).size }
-                        .thenBy { it.getOutE(E.Type.REF_TKN).filter { e -> (e as TokenE).isAbbr }.count() }
+                        .thenBy { it.getOutE(E.Type.REF_TKN).filter { e -> (e as ElementE).isAbbr }.count() }
                         .thenByDescending { it.weight })
                 .associateBy({ it }, { false }).toMutableMap()
 
@@ -144,9 +143,9 @@ class MessagePassing(private val g: G) {
 
     class Message(var originRefV: RefV, var similarity: Float = 1F, var maxLayer: Int = 0) : Cloneable {
         var destRefV: RefV? = null
-        var tokenE: TokenE? = null
+        var tokenE: ElementE? = null
 
-        constructor(originRefV: RefV, similarity: Float, maxLayer: Int, destRefV: RefV?, firstToken: TokenE?) : this(originRefV, similarity, maxLayer) {
+        constructor(originRefV: RefV, similarity: Float, maxLayer: Int, destRefV: RefV?, firstToken: ElementE?) : this(originRefV, similarity, maxLayer) {
             this.destRefV = destRefV
             this.tokenE = firstToken
         }

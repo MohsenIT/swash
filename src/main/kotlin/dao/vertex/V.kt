@@ -43,7 +43,7 @@ open class V(val id: Long, val value: String, val type: Type, var weight: Long) 
         require(this.map { it.type.level }.distinct().count() == 1) {"All vertices should be in the same levels."}
         var level: Int = this.map { it.type.level }.firstOrNull() ?: Int.MAX_VALUE
         var vs: Set<V> = HashObjSets.newMutableSet(this)
-        while (level < destLevel) vs = vs.flatMap{ it.getOutV(E.Type.getTypeByLevels(level, ++level))}.toSet()
+        while (level < destLevel) vs = vs.flatMap{ it.getOutV(E.Type.getNextLevelType(level++))}.toSet()
         return vs
     }
 

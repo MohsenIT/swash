@@ -2,15 +2,14 @@ package dao.vertex
 
 import dao.G
 import dao.edge.E
-import dao.edge.TokenE
-import logic.matching.ClusterProfile
+import dao.edge.ElementE
 
 import dao.vertex.V.Type.REFERENCE
 
 class RefV(id: String, value: String, weight: String) : NameV(id.toLong(), value, REFERENCE, weight.toLong()) {
 
-    override val tokenEs: List<TokenE>
-        get() = getOutE(E.Type.REF_TKN).map { it as TokenE }.sortedBy { it.order }
+    override val elementEs: List<ElementE>
+        get() = getOutE(E.Type.REF_TKN).map { it as ElementE }.sortedBy { it.order }
 
     val refResolvedIdV: V?
         get() = getInV(E.Type.RID_REF).firstOrNull()
@@ -18,16 +17,9 @@ class RefV(id: String, value: String, weight: String) : NameV(id.toLong(), value
     val refClusterV: ClusterV?
         get() = getInV(E.Type.CLS_REF).firstOrNull() as ClusterV
 
-    //region methods
-
-    fun buildClusterProfile(): ClusterProfile {
-        val profile = ClusterProfile()
-        this.tokenEs.forEach { profile.addEntry(ClusterProfile.Entry(it)) }
-        return profile
-    }
 
     /**
-     * replace CLUSTER vertex of a this REFERENCE vertex by `clusterV` of `targetV` parameter.
+     * replace [ClusterV] of [RefV] by the [ClusterV] of [targetV] parameter.
      *
      * @param targetV reference vertex that its cluster should be replaced by old one.
      */
@@ -45,6 +37,4 @@ class RefV(id: String, value: String, weight: String) : NameV(id.toLong(), value
 
         E(clusterV, this, E.Type.CLS_REF)
     }
-
-    //endregion
 }
