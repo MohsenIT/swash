@@ -4,12 +4,14 @@ import dao.vertex.ElementV
 import dao.vertex.NameV
 import util.Strings
 
-class ElementE(inV: NameV, outV: ElementV, type: String, weight: String) : E(inV, outV, type, weight), Cloneable {
+class ElementE(inV: NameV, outV: ElementV, type: Type, weight: Float = 0F, var pon: PON = PON.UNKNOWN) : E(inV, outV, type, weight), Cloneable {
+
+    constructor(inV: NameV, outV: ElementV, type: String, weight: String) : this(inV, outV, Type.valueOf(type), weight.toFloat())
+
     //region fields
     val order: Int = weight.toInt() - 1
     val isAbbr: Boolean = Strings.isAbbreviated(outV.value.length)
     val isBeforeDot: Boolean = Strings.isBeforeDot(inV.value, order)
-    var pon: PON = PON.UNKNOWN
 
     override val outV: ElementV
         get() = super.outV as ElementV

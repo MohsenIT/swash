@@ -6,4 +6,9 @@ package dao.vertex
  * @param clusterCount Int value of cluster count
  */
 class ElementV(id: String, value: String, type: String, weight: String, var clusterCount: Int = 0) :
-        V(id, value, type, weight)
+        V(id, value, type, weight) {
+
+    override fun getOutNextLayerV(): Set<ElementV> = super.getOutNextLayerV() as Set<ElementV>
+
+    fun getOutToLayer(layer: Int): Set<ElementV> = if (type.layer == layer - 1) getOutNextLayerV() else setOf(this)
+}

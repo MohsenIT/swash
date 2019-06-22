@@ -5,10 +5,7 @@ import com.koloboke.collect.set.hash.HashObjSets
 import dao.edge.E
 import dao.edge.ElementE
 import dao.edge.ElementE.PON
-import dao.vertex.ClusterV
-import dao.vertex.ElementV
-import dao.vertex.RefV
-import dao.vertex.V
+import dao.vertex.*
 import de.zedlitz.phonet4java.Phonet2
 import util.IOs
 
@@ -30,10 +27,23 @@ class G(expectedVertexCount: Int = 40000, expectedEdgesCount: Int = 80000) {
 
     fun getV(id: Long): V? = vs[id]
 
-    fun addE(inV: V, outV: V, type: E.Type, weight: Float) {
+    fun addE(inV: V, outV: V, type: E.Type, weight: Float = 0F) {
         if (inV === outV) return
-        val e = E(inV, outV, type, weight)
-        this.es.add(e)
+        this.es.add(E(inV, outV, type, weight))
+    }
+
+    fun addHierarchyE(hierarchyV: HierarchyV, parents: List<NameV>?, children: List<NameV>?) {
+        vs.putIfAbsent(hierarchyV.id, hierarchyV)
+        parents?.forEach {
+            if (!hierarchyV.isChildOf(it as HierarchyV)) addE(it, hierarchyV, E.Type.HRC_HRC)
+        }
+        children?.forEach {
+            if (!it.isChildOf(hierarchyV)) addE(hierarchyV, it, if (it.isRef) E.Type.HRC_REF else E.Type.HRC_HRC)
+        }
+    }
+
+    fun addElementE(inV: NameV, outV: ElementV, type: E.Type, weight: Float = 0F) {
+        this.es.add(E(inV, outV, type, weight))
     }
 
     //endregion
@@ -92,6 +102,7 @@ class G(expectedVertexCount: Int = 40000, expectedEdgesCount: Int = 80000) {
         logger.info { "initializing cluster vertices: a cluster vertex is assigned to each REF vertex." }
     }
 
+    //// TODO: 2019-06-16 use counter instead iterate all
     fun getMaxIdV() = vs.keys.max() ?: 0
 
     /**
@@ -99,7 +110,7 @@ class G(expectedVertexCount: Int = 40000, expectedEdgesCount: Int = 80000) {
      */
     private fun initPONs() {
         for (refV in getRefVs()) {
-            val tokenEs= refV.elementEs.sortedWith(compareBy<ElementE> { it.isAbbr }.thenByDescending { it.order }).toMutableList()
+            val tokenEs = refV.elementEs.sortedWith(compareBy<ElementE> { it.isAbbr }.thenByDescending { it.order }).toMutableList()
             val lname: ElementE = tokenEs[0]
             lname.pon = PON.LASTNAME
             tokenEs.remove(lname)
@@ -126,7 +137,7 @@ class G(expectedVertexCount: Int = 40000, expectedEdgesCount: Int = 80000) {
      * @param clusters a map of cluster Vs and their representative
      */
     fun updateClusters(clusters: Map<RefV, Collection<RefV>>) {
-        clusters.entries.forEach { it.value.forEach { v -> v.replaceReferenceCluster(it.key, this)} }
+        clusters.entries.forEach { it.value.forEach { v -> v.replaceReferenceCluster(it.key, this) } }
     }
 
     /**
@@ -139,8 +150,8 @@ class G(expectedVertexCount: Int = 40000, expectedEdgesCount: Int = 80000) {
         while (!queue.isEmpty()) {
             val refV = queue.peek()
             val vsInRID = refV.getInV(E.Type.RID_REF).elementAt(0).getOutV(E.Type.RID_REF)
-                    .filter{ queue.contains(it) }.map { it as RefV }
-            vsInRID.forEach {it.replaceReferenceCluster(refV, this) }
+                    .filter { queue.contains(it) }.map { it as RefV }
+            vsInRID.forEach { it.replaceReferenceCluster(refV, this) }
             queue.removeAll(vsInRID)
         }
     }
@@ -187,7 +198,7 @@ class G(expectedVertexCount: Int = 40000, expectedEdgesCount: Int = 80000) {
             refsToNotVisited[s] = false
             while (!queue.isEmpty()) {
                 val u = queue.remove()
-                val coResAdjs = u.getInOutV(E.Type.REF_REF).stream().map { it as RefV }.filter{ refsToNotVisited[it]!! }
+                val coResAdjs = u.getInOutV(E.Type.REF_REF).stream().map { it as RefV }.filter { refsToNotVisited[it]!! }
                 for (adj in coResAdjs) {
                     if (adj == t) {
                         t.replaceReferenceCluster(s, this)
@@ -213,18 +224,18 @@ class G(expectedVertexCount: Int = 40000, expectedEdgesCount: Int = 80000) {
     /**
      * update the clusterCnt field of all `ElementV`s
      *
-     * @param maxUpdateLevel max level to update cluster count in the graph, 0 is REF, 1 is TKN , and etc.
+     * @param maxUpdateLayer max layer to update cluster count in the graph, 0 is REF, 1 is TKN , and etc.
      */
     @JvmOverloads
-    fun updateAncestorClusterCnt(maxUpdateLevel: Int = V.Type.MAX_LEVEL) {
-        require(maxUpdateLevel in 1..3) {"maxUpdateLevel must be between [1, 3]."}
-        val elementVs = vs.values.filter { it.type.level in 1..maxUpdateLevel }
-                .map { it as ElementV }.sortedBy { it.type.level }
+    fun updateAncestorClusterCnt(maxUpdateLayer: Int = V.Type.MAX_LAYER) {
+        require(maxUpdateLayer in 1..3) { "maxUpdateLayer must be between [1, 3]." }
+        val elementVs = vs.values.filter { it.type.layer in 1..maxUpdateLayer }
+                .map { it as ElementV }.sortedBy { it.type.layer }
         for (v in elementVs) {
-            v.clusterCount = v.inE.entries.filter { it.key.isInterLevel() }
-                    .flatMap { it.value.map { x -> if (x.inV is RefV) 1 else (x.inV as ElementV).clusterCount }}.sum()
+            v.clusterCount = v.inE.entries.filter { it.key.isInterLayer() }
+                    .flatMap { it.value.map { x -> if (x.inV is RefV) 1 else (x.inV as ElementV).clusterCount } }.sum()
         }
-        logger.info {"ClusterCount property of level 1 to $maxUpdateLevel  are updated."}
+        logger.info { "ClusterCount property of layer 1 to $maxUpdateLayer  are updated." }
     }
     //endregion
 }

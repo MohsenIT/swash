@@ -37,13 +37,13 @@ open class V(val id: Long, val value: String, val type: Type, var weight: Long) 
         return set
     }
 
-    fun getOutNextLevelV(): Set<V> = outE.keys.filter { it.outLevel == it.inLevel + 1 }.flatMap { getOutV(it) }.toSet()
+    open fun getOutNextLayerV(): Set<V> = outE.keys.filter { it.outLayer == it.inLayer + 1 }.flatMap { getOutV(it) }.toSet()
 
-    fun Collection<V>.outVsUntil(destLevel: Int): Set<V> {
-        require(this.map { it.type.level }.distinct().count() == 1) {"All vertices should be in the same levels."}
-        var level: Int = this.map { it.type.level }.firstOrNull() ?: Int.MAX_VALUE
+    fun Collection<V>.outVsUntil(destLayer: Int): Set<V> {
+        require(this.map { it.type.layer }.distinct().count() == 1) { "All vertices should be in the same layers." }
+        var layer: Int = this.map { it.type.layer }.firstOrNull() ?: Int.MAX_VALUE
         var vs: Set<V> = HashObjSets.newMutableSet(this)
-        while (level < destLevel) vs = vs.flatMap{ it.getOutV(E.Type.getNextLevelType(level++))}.toSet()
+        while (layer < destLayer) vs = vs.flatMap { it.getOutV(E.Type.getNextLayerType(layer++)) }.toSet()
         return vs
     }
 
@@ -52,13 +52,13 @@ open class V(val id: Long, val value: String, val type: Type, var weight: Long) 
 
     //region Add or Remove Edges
     fun addE(e: E) {
-        if(e.inV === this) outE.putOrAddListValue(e.type, e)
-        else if(e.outV === this) inE.putOrAddListValue(e.type, e)
+        if (e.inV === this) outE.putOrAddListValue(e.type, e)
+        else if (e.outV === this) inE.putOrAddListValue(e.type, e)
     }
 
     fun removeE(e: E) {
-        if(e.inV === this) outE[e.type]?.remove(e)
-        else if(e.outV === this) inE[e.type]?.remove(e)
+        if (e.inV === this) outE[e.type]?.remove(e)
+        else if (e.outV === this) inE[e.type]?.remove(e)
     }
 
     //endregion
@@ -66,22 +66,22 @@ open class V(val id: Long, val value: String, val type: Type, var weight: Long) 
 
     override fun toString() = String.format("V[%s] %s: %d", type.text, value, weight)
 
-    enum class Type(val text: String, val level: Int) {
+    enum class Type(val text: String, val layer: Int) {
         RESOLVED_ID("RID", -1),
         CLUSTER("CLS", -1),
+        HIERARCHY("HRC", -1),
         REFERENCE("REF", 0),
-        HIERARCHY("HRC", 0),
         TOKEN("TKN", 1),
         SIMILAR("SIM", 2),
         NICKNAME("NCK", 2),
         ABBREVIATED("ABR", 3);
 
         companion object {
-            val MAX_LEVEL = values().map { it.level }.max() ?: 3
+            val MAX_LAYER = values().map { it.layer }.max() ?: 3
 
-            fun toType(text: String): Type? = values().first { it.text.equals(text, ignoreCase = true)}
+            fun toType(text: String): Type? = values().first { it.text.equals(text, ignoreCase = true) }
 
-            fun isElement(type: String) = toType(type)!!.level > 0
+            fun isElement(type: String) = toType(type)!!.layer > 0
 
             fun isReference(type: String) = toType(type) == REFERENCE
         }

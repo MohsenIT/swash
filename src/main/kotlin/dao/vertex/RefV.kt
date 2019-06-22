@@ -17,6 +17,11 @@ class RefV(id: String, value: String, weight: String) : NameV(id.toLong(), value
     val refClusterV: ClusterV?
         get() = getInV(E.Type.CLS_REF).firstOrNull() as ClusterV
 
+    val refHierarchyVs: List<HierarchyV>
+        get() = getInV(E.Type.HRC_REF).map { it as HierarchyV }
+
+    fun getAdjacentCandidates() = getInOutV(E.Type.REF_REF).map { it as RefV }
+
 
     /**
      * replace [ClusterV] of [RefV] by the [ClusterV] of [targetV] parameter.

@@ -15,26 +15,26 @@ import java.util.*
 
 class MessagePassing(private val g: G) {
     private var currentPosition: MutableMap<Message, V> = emptyMap<Message, V>().toMutableMap()
-    private var currentLevel = 0
+    private var currentLayer = 0
 
     //region Traversal & Message Passing Steps
     fun refVs(): MessagePassing {
         val sourceVs = g.getRefVs()
         currentPosition = HashObjObjMaps.newMutableMap(sourceVs.size)
         sourceVs.forEach { currentPosition[Message(it)] = it }
-        currentLevel = 0
+        currentLayer = 0
         return this
     }
 
     fun sendOuts(): MessagePassing {
         val nextPosition: MutableMap<Message, V> = HashObjObjMaps.newMutableMap()
-        val types = E.Type.getNextLevelTypes(currentLevel)
+        val types = E.Type.getNextLayerTypes(currentLayer)
         for ((key, value) in currentPosition) {
             val outEs = types.map { value.getOutE(it) }.flatten()
             for (e in outEs) {
                 val elementV = e.outV as ElementV
                 val m = key.clone()
-                m.incMaxLevel()
+                m.incMaxLayer()
                 m.similarity = m.similarity / elementV.clusterCount
                 if (elementV.type === V.Type.TOKEN)
                     m.tokenE = e as ElementE
@@ -42,13 +42,13 @@ class MessagePassing(private val g: G) {
             }
         }
         currentPosition = nextPosition
-        currentLevel++
+        currentLayer++
         return this
     }
 
     fun sendIns(): MessagePassing {
         val nextPosition: MutableMap<Message, V> = HashObjObjMaps.newMutableMap()
-        val types = E.Type.getNextLevelTypes(currentLevel - 1)
+        val types = E.Type.getNextLayerTypes(currentLayer - 1)
 
         for ((key, value) in currentPosition) {
             val inVs = types.map { value.getInV(it) }.flatten()
@@ -62,11 +62,11 @@ class MessagePassing(private val g: G) {
             }
         }
         currentPosition = nextPosition
-        currentLevel--
+        currentLayer--
         return this
     }
 
-    fun aggMsgsToCandidates(commonMsgTh: Int = 1, relSimTh: Float = 0.5f): Map<RefV, List<Candidate>> {
+    fun aggMessagesToCandidates(commonMsgTh: Int = 1, relSimTh: Float = 0.5f): Map<RefV, List<Candidate>> {
         val result = currentPosition.keys
                 .groupBy { it.destRefV!! }.mapValues { it.value.groupBy(Message::originRefV) }
 
@@ -150,7 +150,7 @@ class MessagePassing(private val g: G) {
             this.tokenE = firstToken
         }
 
-        fun incMaxLevel() {
+        fun incMaxLayer() {
             this.maxLayer++
         }
 

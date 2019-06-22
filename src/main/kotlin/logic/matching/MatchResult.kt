@@ -115,7 +115,7 @@ class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<ElementE>) {
     private fun isConsistent(pons: Array<ElementE.PON>): Boolean {
         for (profileEntry in clusterProfile.entries) {
             val matched = matchedEntries.filter { it.profileEntry === profileEntry }.sortedWith(
-                    compareBy<Matched> { it.matchedV.type.level } // 1) isMatched in lower level has more priority
+                    compareBy<Matched> { it.matchedV.type.layer } // 1) isMatched in lower layer has more priority
                             .thenBy { it.profileEntry.pon !== pons[it.refTokenE.order] } // 2) if a pon matches with multiple tokens, it consider the one that has the same pon
             ).firstOrNull()
 
@@ -126,9 +126,9 @@ class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<ElementE>) {
                     return false // if refV has any token with the same PON, it must be isMatched.
             } else if (matched.hasEqualPON(pons)) {
                 if (profileEntry.pon === LASTNAME) {
-                    if (matched.matchedV.type.level > 2) return false
+                    if (matched.matchedV.type.layer > 2) return false
                 } else { // TODO: 26/08/2018 it is possible that two middle names are matched that one is abbr and other not
-                    if (matched.isNonAbbrsMatchedInAbbrLevel)
+                    if (matched.isNonAbbrsMatchedInAbbrLayer)
                         return false
                 }
             } else {
@@ -176,24 +176,24 @@ class MatchResult(var clusterProfile: ClusterProfile, tokenEs: List<ElementE>) {
 
         /**
          * If a reference token and a clusterProfile entry are both Non-Abbreviated,
-         * they should be isMatched in first level (token as is) or at second level (similar tokens).
+         * they should be isMatched in first layer (token as is) or at second layer (similar tokens).
          *
          * @return a boolean that Is the reference token and clusterProfile entry
-         * are both non-abbreviated and isMatched in abbreviated level?
+         * are both non-abbreviated and isMatched in abbreviated layer?
          */
-        val isNonAbbrsMatchedInAbbrLevel: Boolean
-            get() = matchedV.type.level == 3 && !refTokenE.isAbbr&& !profileEntry.isAbbr
+        val isNonAbbrsMatchedInAbbrLayer: Boolean
+            get() = matchedV.type.layer == 3 && !refTokenE.isAbbr&& !profileEntry.isAbbr
                     && !refTokenE.isBeforeDot && !profileEntry.isBeforeDot
 
         /**
          * If a reference token and a clusterProfile entry are both Abbreviated,
-         * they should be isMatched in first level (token as is).
+         * they should be isMatched in first layer (token as is).
          *
          * @return a boolean that Is the reference token and clusterProfile entry
-         * are both abbreviated and is not isMatched in token level?
+         * are both abbreviated and is not isMatched in token layer?
          */
-        val isAbbrsMatchedInNonTokenLevel: Boolean
-            get() =  matchedV.type.level > 1 && refTokenE.isAbbr && profileEntry.isAbbr
+        val isAbbrsMatchedInNonTokenLayer: Boolean
+            get() =  matchedV.type.layer > 1 && refTokenE.isAbbr && profileEntry.isAbbr
 
         /**
          * Check if profile entry is abbreviated, while isMatched refV tokenE's is not?

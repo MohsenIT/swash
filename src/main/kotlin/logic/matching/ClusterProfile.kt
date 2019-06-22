@@ -27,7 +27,7 @@ class ClusterProfile {
         var profileMap = entries.groupBy { it.elementV }.mapValues { it.value.toMutableSet() }.toMutableMap()
 
         val result = MatchResult(this, refV.elementEs)
-        for (i in 1..V.Type.MAX_LEVEL) {
+        for (i in 1..V.Type.MAX_LAYER) {
             refMap = refMap.outElementVsAtLeast(i)
             profileMap = profileMap.outElementVsAtLeast(i)
 
@@ -37,10 +37,10 @@ class ClusterProfile {
                     profileMap[key]?.forEach { entry ->
                         value.forEach { tokenE ->
                             val matched = MatchResult.Matched(entry, tokenE, key)
-                            if (!matched.isNonAbbrsMatchedInAbbrLevel && !matched.isAbbrsMatchedInNonTokenLevel) {
+                            if (!matched.isNonAbbrsMatchedInAbbrLayer && !matched.isAbbrsMatchedInNonTokenLayer) {
                                 result.addMatchedEntries(matched)
                                 if (entry.pon === tokenE.pon)
-                                // If not, may be isMatched in upper level
+                                // If not, may be isMatched in upper layer
                                     matchedEntriesToRemove.add(matched)
                             }
                         }
@@ -59,23 +59,23 @@ class ClusterProfile {
     }
 
     /**
-     * traverse out vertices until all of them at least reached to `minLevel`.
-     * if the level of a vertex is greater than `minLevel`, this vertex does not traversed.
+     * traverse out vertices until all of them at least reached to `minLayer`.
+     * if the layer of a vertex is greater than `minLayer`, this vertex does not traversed.
      *
-     * @param minLevel minimum level of output `ElementV`s.
+     * @param minLayer minimum layer of output `ElementV`s.
      * @param <T> A generic type of my parameter
-     * @return set of vertices in the minLevel
+     * @return set of vertices in the minLayer
     </T> */
-    fun <T> MutableMap<ElementV, MutableSet<T>>.outElementVsAtLeast(minLevel: Int): MutableMap<ElementV, MutableSet<T>> {
+    fun <T> MutableMap<ElementV, MutableSet<T>>.outElementVsAtLeast(minLayer: Int): MutableMap<ElementV, MutableSet<T>> {
         val resultMap: MutableMap<ElementV, MutableSet<T>> = HashObjObjMaps.newMutableMap(this.size)
         for ((key, value) in this) {
-            var currentLevel = key.type.level
-            if (currentLevel >= minLevel)
+            var currentLayer = key.type.layer
+            if (currentLayer >= minLayer)
                 resultMap.put(key, value)
             else {
                 var vs = setOf(key)
-                while (currentLevel++ < minLevel) {
-                    vs = vs.flatMap { it.getOutNextLevelV() }.map { it as ElementV}.toSet()
+                while (currentLayer++ < minLayer) {
+                    vs = vs.flatMap { it.getOutNextLayerV() }.toSet()
                 }
                 for (v in vs) {
                     if (resultMap.containsKey(v))
@@ -99,7 +99,7 @@ class ClusterProfile {
         matchResult.matchedEntries.filter { it.isProfileAbbrAndRefNonAbbr }
                 .forEach { matched -> matched.profileEntry = Entry(matched.refTokenE) }
 
-        // TODO: 27/08/2018 if isMatched on 2nd level?
+        // TODO: 27/08/2018 if isMatched on 2nd layer?
     }
 
     override fun toString() = "${entries.size} [entries=${entries.joinToString { it.toString() }}]"
